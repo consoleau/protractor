@@ -26,6 +26,7 @@ export class TaskQueue {
 export class TaskScheduler {
   taskQueues: Array<TaskQueue>;
   rotationIndex: number;
+  defaultDownloadDir: string;
 
   /**
    * A scheduler to keep track of specs that need running and their associated
@@ -83,6 +84,7 @@ export class TaskScheduler {
     });
     this.taskQueues = taskQueues;
     this.rotationIndex = 0;  // Helps suggestions to rotate amongst capabilities
+    this.defaultDownloadDir = config.capabilities.chromeOptions.prefs.download.default_directory
   }
 
   /**
@@ -97,6 +99,8 @@ export class TaskScheduler {
       let queue = this.taskQueues[rotatedIndex];
       if (queue.numRunningInstances < queue.maxInstance &&
           queue.specsIndex < queue.specLists.length) {
+        Object.assign(queue.capabilities.chromeOptions.prefs.download,
+          { default_directory: `${this.defaultDownloadDir}.${this.generateUniqueID()}` });
         this.rotationIndex = rotatedIndex + 1;
         ++queue.numRunningInstances;
         let taskId = '' + rotatedIndex + 1;
@@ -161,4 +165,13 @@ export class TaskScheduler {
     });
     return count;
   }
+
+  private generateUniqueID() {
+    let d = new Date().getTime();
+    return 'xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = (d + Math.random()*16)%16 | 0;
+      d = Math.floor(d/16);
+      return (c=='x' ? r : (r&0x3|0x8)).toString(16);
+    });
+  };
 }
